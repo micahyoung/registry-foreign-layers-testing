@@ -38,7 +38,7 @@ trap "docker rm -f reg >/dev/null" EXIT
 # create and push image to registry and save layer file
 go run main.go $test_image $layer_path
 
-layer_digest=$(shasum -a256 $layer_path | awk '{print $1}')
+layer_digest=$(crane manifest $test_image | jq -r '.layers[].digest')
 
 # attempt to pull, see it fail
 if docker pull $test_image; then
