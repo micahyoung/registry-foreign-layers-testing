@@ -3,7 +3,6 @@ set -o errexit -o pipefail -o nounset
 
 http_registry_host=localhost:5000
 test_image=${http_registry_host}/test
-layer_path=layer.tar
 
 # spin up docker-distribution registry that allows foreign layers
 cat > config.yml <<EOF
@@ -36,7 +35,7 @@ docker run -d -p5000:5000 -v $PWD/config.yml:/etc/docker/registry/config.yml --n
 trap "docker rm -f reg >/dev/null" EXIT
 
 # create and push image to registry and save layer file
-go run main.go $test_image $layer_path
+go run main.go $test_image
 
 # pull successfully
 docker pull $test_image
