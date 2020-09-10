@@ -38,17 +38,6 @@ trap "docker rm -f reg >/dev/null" EXIT
 # create and push image to registry and save layer file
 go run main.go $test_image $layer_path
 
-# attempt to pull, see it fail
-if docker pull $test_image; then
-  echo invalid test, this should have failed
-  exit 1
-fi
-
-# upload foreign layer (based on https://docs.docker.com/registry/spec/api/#pushing-an-image; currently only works for docker distribution)
-layer_digest=$(crane manifest $test_image | jq -r '.layers[].digest')
-upload_url=$(curl -i -v -X POST "http://${http_registry_host}/v2/test/blobs/uploads/" -d "" | awk '/Location: /{print $2}' | sed -e 's/[[:cntrl:]]//')
-curl -v -X PUT -H "Content-Type: application/octet-stream" --data-binary @${layer_path} "${upload_url}&digest=${layer_digest}"
-
 # pull successfully
 docker pull $test_image
 
