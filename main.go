@@ -15,16 +15,19 @@ import (
 
 var logger *log.Logger
 
-func run(imageName string) error {
-	// write foreignLayerImage to registry, without layer data
+func run(imageName string, writeLayerBlob bool) error {
 	imageRef, err := name.ParseReference(imageName, name.WeakValidation)
 
 	// rand layer results in a random foreignLayerImage ever time
 	randLayer, err := random.Layer(512, types.DockerForeignLayer)
 
-	logger.Printf("writing actual layer data %s", imageName)
-	if err := remote.WriteLayer(imageRef.Context(), randLayer, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-		return err
+	if writeLayerBlob {
+		logger.Printf("writing layer data first %s", imageName)
+		if err := remote.WriteLayer(imageRef.Context(), randLayer, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+			return err
+		}
+	} else {
+		logger.Print("ommitting layer blob. Image will be unpullable")
 	}
 
 	logger.Printf("writing actual image with foreign layer references in tact %s", imageName)
@@ -47,11 +50,16 @@ func main() {
 
 	imageName := os.Args[1]
 	if imageName == "" {
-		fmt.Printf("usage: %s <localhost:5000/test>")
+		fmt.Printf("usage: %s <localhost:5000/test> <optional: 'false' to write image without layer data>")
 		os.Exit(1)
 	}
 
-	if err := run(imageName); err != nil {
+	writeLayerBlob := true
+	if len(os.Args) == 3 && os.Args[2] == "false" {
+		writeLayerBlob = false
+	}
+
+	if err := run(imageName, writeLayerBlob); err != nil {
 		log.Fatal(err)
 	}
 

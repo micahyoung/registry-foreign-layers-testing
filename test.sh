@@ -34,7 +34,18 @@ EOF
 docker run -d -p5000:5000 -v $PWD/config.yml:/etc/docker/registry/config.yml --name reg registry:2
 trap "docker rm -f reg >/dev/null" EXIT
 
-# create and push image to registry and save layer file
+# push image without layer blob
+go run main.go $test_image false
+
+# attempt to pull, see it fail
+if docker pull $test_image; then
+  echo invalid test, this should have failed
+  exit 1
+else
+  echo failed as expected
+fi
+
+# push image with layer blob
 go run main.go $test_image
 
 # pull successfully
